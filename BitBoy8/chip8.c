@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include "chip8.h"
 
+//todo encapsulate into a struct
+
 uint8_t V[NUM_REGISTERS] = { 0 };
 uint8_t memory[SIZE_MEMORY] = { 0 };
 uint16_t idx = 0;
@@ -15,6 +17,7 @@ uint8_t delay_timer = 0;
 uint8_t sound_timer = 0;
 uint8_t keypad[KEYPAD_SIZE] = { 0 };
 uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT] = { 0 };
+uint8_t draw_flag = 0;
 uint16_t opcode = 0;
 
 uint8_t x;
@@ -52,6 +55,7 @@ uint8_t get_random_byte() {
 //CLS
 void op_00EO() {
 	memset(video, 0, sizeof(video));
+	draw_flag = 1;
 }
 
 //RET
@@ -158,8 +162,6 @@ void op_8XY6() {
 	}
 
 	V[x] >>= 1;
-
-
 }
 
 //SUBN Vx, Vy
@@ -216,6 +218,7 @@ void op_CXNN() {
  *  If any pixels on the screen were turned “off” by this, the VF flag register is set to 1. Otherwise, it’s set to 0.
  **/
 void op_DXYN() {
+	draw_flag = 1;
 	uint8_t x_pos = V[x] % SCREEN_WIDTH;
 	uint8_t y_pos = V[y] % SCREEN_HEIGHT;
 	V[0xF] = 0;
@@ -257,7 +260,7 @@ void emulate_cycle() {
 	nn = memory[pc + 1];
 	nnn = opcode & 0x0FFF;
 
-	printf("%04x", opcode);
+	//printf("%04x", opcode);
 
 	//execute
 	pc += 2;

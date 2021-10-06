@@ -14,6 +14,11 @@
 //xpos = i % 64, ypos = y / 64
 extern uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT];
 extern uint8_t memory[SIZE_MEMORY];
+extern uint8_t keypad[KEYPAD_SIZE];
+extern uint8_t draw_flag;
+
+
+
 
 uint8_t get_random_byte();
 uint8_t get_bit_from_byte(uint8_t byte, uint8_t bit);
