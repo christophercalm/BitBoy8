@@ -31,7 +31,6 @@ int main(int argc, char* argv) {
     init_graphics(&window, &screen_surface);
 
     init_chip8();
-    printf("%02x", get_random_byte());
 
     FILE* f = fopen("IBM.ch8", "rb");
 
@@ -84,8 +83,6 @@ void init_graphics(SDL_Window **window, SDL_Surface **screen_surface) {
 }
 
 void update_graphics(SDL_Window **window, SDL_Surface **screen_surface) {
-    //video[0] = 1;
-    video[2047] = 1;
     for (uint16_t i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; ++i) {
         if (video[i] == 1) {
             uint16_t x_pos = (i % SCREEN_WIDTH) * SDL_SCALE_FACTOR;
@@ -96,7 +93,7 @@ void update_graphics(SDL_Window **window, SDL_Surface **screen_surface) {
         }
     }
     SDL_UpdateWindowSurface(*window);
-    //SDL_Delay(4000);
+    SDL_Delay(1000);
 }
 
 

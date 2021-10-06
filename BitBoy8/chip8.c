@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "chip8.h"
 
-uint8_t registers[NUM_REGISTERS] = { 0 };
+uint8_t V[NUM_REGISTERS] = { 0 };
 uint8_t memory[SIZE_MEMORY] = { 0 };
 uint16_t idx = 0;
 uint16_t pc = 0;
@@ -17,8 +17,8 @@ uint8_t keypad[KEYPAD_SIZE] = { 0 };
 uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT] = { 0 };
 uint16_t opcode = 0;
 
-uint8_t op_x;
-uint8_t op_y;
+uint8_t x;
+uint8_t y;
 uint8_t n;
 uint8_t nn;
 uint16_t nnn;
@@ -49,30 +49,166 @@ uint8_t get_random_byte() {
 }
 
 
+//CLS
 void op_00EO() {
 	memset(video, 0, sizeof(video));
 }
 
+//RET
+void op_00EE() {
+	--sp;
+	pc = stack[pc];
+}
+
+//JP addr
 void op_1NNN() {
 	pc = nnn;
 }
 
-void op_00EE() {
-	sp = stack[0];
-	--sp;
+// call addr
+void op_2NNN() {
+	++sp;
+	stack[0] = pc;
+	pc = nnn;
 }
 
+//SE Vx, byte
+void op_3XNN() {
+	if (V[x] == nn) {
+		pc += 2;
+	}
+}
+
+//SNE Vx, byte
+void op_4XNN() {
+	if (V[x] != nn) {
+		pc += 2;
+	}
+}
+
+//SE Vx, Vy
+void op_5XY0() {
+	if (V[x] == V[y]) {
+		pc += 2;
+	}
+}
+
+//LD Vx, byte
 void op_6XNN() {
-	registers[op_x] = nn;
+	V[x] = nn;
 }
 
+//ADD Vx, byte
 void op_7XNN() {
-	registers[op_x] += nn;
+	V[x] += nn;
+}
+
+//LD Vx, byte
+void op_8XY0() {
+	V[x] = V[y];
+}
+
+//OR Vx, Vy
+void op_8XY1() {
+	V[x] = V[x] | V[y];
+}
+
+//AND Vx, Vy
+void op_8XY2() {
+	V[x] = V[x] & V[y];
+}
+
+//XOR Vx, Vy
+void op_8XY3() {
+	V[x] = V[x] ^ V[y];
+}
+
+//ADD Vx, Vy
+void op_8XY4() {
+	if (V[x] + V[y] > 255) {
+		V[0xF] = 1;
+	}
+	else {
+		V[0xF] = 0;
+	}
+
+	V[x] = V[x] ^ V[y];
+}
+
+//SUB Vx, Vy
+void op_8XY5() {
+	if (V[x] > V[y]) {
+		V[0xF] = 1;
+	}
+	else {
+		V[0xF] = 0;
+	}
+
+	V[x] = V[x] - V[y];
+}
+
+//SHR Vx {, Vy
+//If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+void op_8XY6() {
+	if (get_bit_from_byte(V[x], 1)) {
+		V[0xF] = 1;
+	}
+	else {
+		V[0xF] = 0;
+	}
+
+	V[x] >>= 1;
+
+
+}
+
+//SUBN Vx, Vy
+void op_8XY7() {
+	if (V[x] > V[y]) {
+		V[0xF] = 1;
+	}
+	else {
+		V[0xF] = 0;
+	}
+
+	V[x] = V[y] - V[x];
+}
+
+//SHL Vx {, Vy}
+void op_8XYE() {
+	if (get_bit_from_byte(V[x], 7)) {
+		V[0xF] = 1;
+	}
+	else {
+		V[0xF] = 0;
+	}
+
+	V[x] <<= 1;
+}
+
+//SNE Vx, Vy
+void op_9XY0() {
+	if (V[x] != V[y]) {
+		pc += 2;
+	}
 }
 
 void op_ANNN() {
 	idx = nnn;
 }
+
+// JMP with offset
+void op_BNNN() {
+	//this instruction jumped to the address NNN plus the value in the register V0.
+	sp = nnn + V[0];
+}
+
+//CXNN: Random
+void op_CXNN() {
+	V[x] = get_random_byte() & nn;
+}
+
+
 
 /**
  *  It will draw an N pixels tall sprite from the memory location that the I index register is holding to the screen,
@@ -80,26 +216,27 @@ void op_ANNN() {
  *  If any pixels on the screen were turned “off” by this, the VF flag register is set to 1. Otherwise, it’s set to 0.
  **/
 void op_DXYN() {
-	uint8_t x_pos = registers[op_x] % SCREEN_WIDTH;
-	uint8_t y_pos = registers[op_y] % SCREEN_HEIGHT;
-	registers[0xF] = 0;
+	uint8_t x_pos = V[x] % SCREEN_WIDTH;
+	uint8_t y_pos = V[y] % SCREEN_HEIGHT;
+	V[0xF] = 0;
 	for (uint8_t row = 0; row < n; row++) {
 		uint8_t display_byte = memory[idx + row];
 		for (uint8_t sprite_pixel = 0; sprite_pixel < WIDTH_SPRITE; sprite_pixel++) {
 			if (get_bit_from_byte(display_byte, WIDTH_SPRITE - sprite_pixel - 1) && get_pixel_set_in_display(x_pos, y_pos)) {
 				video[get_pixel_array_index_in_display(x_pos, y_pos)] = 0;
-				registers[0xF] = 1;
+				V[0xF] = 1;
 			}	else if (get_bit_from_byte(display_byte, WIDTH_SPRITE - sprite_pixel - 1) && !get_pixel_set_in_display(x_pos, y_pos)) {
 				video[get_pixel_array_index_in_display(x_pos, y_pos)] = 1;
 			}
 			x_pos++;
 		}
-		x_pos = registers[op_x] % SCREEN_WIDTH;
+		x_pos = V[x] % SCREEN_WIDTH; //reset x position
 		y_pos++;
 		if (y_pos >= SCREEN_HEIGHT) {
 			return;
 		}
 	}
+	//sleep(1);
 }
 
 
@@ -114,8 +251,8 @@ void emulate_cycle() {
 	// N: The fourth nibble. A 4-bit number.
 	// NN: The second byte (third and fourth nibbles). An 8-bit immediate number.
 	// NNN: The second, third and fourth nibbles. A 12-bit immediate memory address.
-	op_x = memory[pc] & 0x0F;
-	op_y = memory[pc + 1] >> 4;
+	x = memory[pc] & 0x0F;
+	y = memory[pc + 1] >> 4;
 	n = memory[pc + 1] & 0x0F;
 	nn = memory[pc + 1];
 	nnn = opcode & 0x0FFF;
@@ -127,6 +264,8 @@ void emulate_cycle() {
 	//Mask off (with a binary AND) the first number in the instruction, and have one case per numbe
 
 	uint16_t masked_opcode = (opcode & 0xF000) >> 12;
+	uint8_t last_nibble_opcode = opcode & 0xF; 
+
 	switch (masked_opcode) {
 	case 0x0:
 		/* code */
@@ -145,12 +284,16 @@ void emulate_cycle() {
 		op_1NNN();
 		break;
 	case 0x2:
+		op_2NNN();
 		break;
 	case 0x3:
+		op_3XNN();
 		break;
 	case 0x4:
+		op_4XNN();
 		break;
 	case 0x5:
+		op_5XY0();
 		break;
 	case 0x6:
 		op_6XNN();
@@ -158,14 +301,49 @@ void emulate_cycle() {
 	case 0x7:
 		op_7XNN();
 		break;
+	case 0x8:
+		//switch on last nibble
+		switch (n) { 
+			case 0x0:
+				op_8XY0();
+				break;
+			case 0x1:
+				op_8XY1();
+				break;
+			case 0x2:
+				op_8XY2();
+				break;
+			case 0x3:
+				op_8XY3();
+				break;
+			case 0x4:
+				op_8XY4();
+				break;
+			case 0x5:
+				op_8XY5();
+				break;
+			case 0x6:
+				op_8XY6();
+				break;
+			case 0x7:
+				op_8XY7();
+				break;
+			case 0xE:
+				op_8XYE();
+				break;
+		}
+		break;
 	case 0x9:
+		op_9XY0();
 		break;
 	case 0xA:
 		op_ANNN();
 		break;
 	case 0xB:
+		op_BNNN();
 		break;
 	case 0xC:
+		op_CXNN();
 		break;
 	case 0xD:
 		op_DXYN();
@@ -196,7 +374,7 @@ uint8_t get_bit_from_byte(uint8_t byte, uint8_t bit) {
 }	
 
 uint8_t get_pixel_set_in_display(uint8_t xpos, uint8_t ypos) {
-	uint8_t display_index = get_pixel_array_index_in_display(xpos, ypos);
+	uint16_t display_index = get_pixel_array_index_in_display(xpos, ypos);
 	return video[display_index] == 1;
 }
 

@@ -26,11 +26,41 @@ void op_00EO();
 
 void op_00EE();
 
+void op_2NNN();
+
+void op_3XNN();
+
+void op_4XNN();
+
+void op_5XY0();
+
 void op_6XNN();
 
 void op_7XNN();
 
+void op_8XY0();
+
+void op_8XY1();
+
+void op_8XY2();
+
+void op_8XY3();
+
+void op_8XY4();
+
+void op_8XY5();
+
+void op_8XY6();
+
+void op_8XY7();
+
+void op_8XYE();
+
+void op_9XY0();
+
 void op_ANNN();
+
+void op_BNNN();
 
 void op_DXYN();
 
