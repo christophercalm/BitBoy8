@@ -3,10 +3,10 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <conio.h>      
 #include "chip8.h"
 
 //todo encapsulate into a struct
-
 uint8_t V[NUM_REGISTERS] = { 0 };
 uint8_t memory[SIZE_MEMORY] = { 0 };
 uint16_t idx = 0;
@@ -19,6 +19,8 @@ uint8_t keypad[KEYPAD_SIZE] = { 0 };
 uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT] = { 0 };
 uint8_t draw_flag = 0;
 uint16_t opcode = 0;
+
+uint8_t debug_flag = 1;
 
 uint8_t x;
 uint8_t y;
@@ -61,7 +63,7 @@ void op_00EO() {
 //RET
 void op_00EE() {
 	--sp;
-	pc = stack[pc];
+	pc = stack[sp];
 }
 
 //JP addr
@@ -71,8 +73,8 @@ void op_1NNN() {
 
 // call addr
 void op_2NNN() {
+	stack[sp] = pc;
 	++sp;
-	stack[0] = pc;
 	pc = nnn;
 }
 
@@ -136,7 +138,7 @@ void op_8XY4() {
 		V[0xF] = 0;
 	}
 
-	V[x] = V[x] ^ V[y];
+	V[x] = V[x] + V[y];
 }
 
 //SUB Vx, Vy
@@ -154,26 +156,39 @@ void op_8XY5() {
 //SHR Vx {, Vy
 //If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
 void op_8XY6() {
-	if (get_bit_from_byte(V[x], 1)) {
+	V[0xF] = (V[x] & 0x1u);
+
+	V[x] >>= 1;
+	/*if (get_bit_from_byte(V[x], 1)) {
 		V[0xF] = 1;
 	}
 	else {
 		V[0xF] = 0;
 	}
 
-	V[x] >>= 1;
+	V[x] >>= 1;*/
 }
 
 //SUBN Vx, Vy
 void op_8XY7() {
-	if (V[x] > V[y]) {
+	if (V[y] > V[x])
+	{
+		V[0xF] = 1;
+	}
+	else
+	{
+		V[0xF] = 0;
+	}
+
+	V[x] = V[y] - V[x];
+	/*if (V[x] > V[y]) {
 		V[0xF] = 1;
 	}
 	else {
 		V[0xF] = 0;
 	}
 
-	V[x] = V[y] - V[x];
+	V[x] = V[y] - V[x];*/
 }
 
 //SHL Vx {, Vy}
@@ -202,7 +217,7 @@ void op_ANNN() {
 // JMP with offset
 void op_BNNN() {
 	//this instruction jumped to the address NNN plus the value in the register V0.
-	sp = nnn + V[0];
+	pc = nnn + V[0];
 }
 
 //CXNN: Random
@@ -226,10 +241,14 @@ void op_DXYN() {
 		uint8_t display_byte = memory[idx + row];
 		for (uint8_t sprite_pixel = 0; sprite_pixel < WIDTH_SPRITE; sprite_pixel++) {
 			if (get_bit_from_byte(display_byte, WIDTH_SPRITE - sprite_pixel - 1) && get_pixel_set_in_display(x_pos, y_pos)) {
-				video[get_pixel_array_index_in_display(x_pos, y_pos)] = 0;
+				uint16_t index = get_pixel_array_index_in_display(x_pos, y_pos);
+				printf("%d", index);
+				video[index] = 0;
 				V[0xF] = 1;
 			}	else if (get_bit_from_byte(display_byte, WIDTH_SPRITE - sprite_pixel - 1) && !get_pixel_set_in_display(x_pos, y_pos)) {
-				video[get_pixel_array_index_in_display(x_pos, y_pos)] = 1;
+				uint16_t index = get_pixel_array_index_in_display(x_pos, y_pos);
+				printf("%d", index);
+				video[index] = 1;
 			}
 			x_pos++;
 		}
@@ -239,8 +258,91 @@ void op_DXYN() {
 			return;
 		}
 	}
-	//sleep(1);
 }
+
+//Skip if key
+void op_EX9E() {
+	if (keypad[V[x]] == 1) {
+		pc += 2;
+	}
+}
+
+//skip if not key
+void op_EXA1() {
+	if (keypad[V[x]] != 1) {
+		pc += 2;
+	}
+}
+
+//FX07, FX15 and FX18: Timers
+void op_FX07() {
+	V[x] = delay_timer;
+}
+
+void op_FX15() {
+	delay_timer = V[x];
+}
+
+void op_FX18() {
+	sound_timer = V[x];
+}
+
+//Add to index
+void op_FX1E() {
+	if (idx + V[x] > 0x0FFF) {
+		V[0xf] = 1;
+	}
+	idx += V[x];
+}
+
+//wait for key
+void op_FX0A() {
+	uint8_t found = 0;
+	for (uint8_t i = 0; i < KEYPAD_SIZE; i++) {
+		if (keypad[i] == 1) {
+			V[x] = i;
+			found = 1;
+		}
+	}
+	if (!found) {
+		pc -= 2;
+	}
+}
+
+// set index to character
+void op_FX29() {
+	uint8_t font_character = V[x];
+	idx = FONTSET_START_ADDRESS + (font_character * KEY_BYTE_LENGTH);
+}
+
+// Binary-coded decimal conversion
+void op_FX33() {
+	//get number from V[x]
+	uint8_t number = V[x];
+	uint8_t hundreds = number / 100;
+	uint8_t tens = (number - 100 * hundreds) / 10;
+	uint8_t ones = (number - 100 * hundreds) % 10;
+
+	//store bytes starting at index register 
+	memory[idx] = hundreds;
+	memory[idx + 1] = tens;
+	memory[idx + 2] = ones;
+}
+
+// Store registers into memory up until register x from idx
+void op_FX55() {
+	for (uint8_t i = 0; i <= x; i++) {
+		memory[idx + i] = V[i];
+	}
+}
+
+// store memory into registers until register x from idx
+void op_FX65() {
+	for (uint8_t i = 0; i <= x; i++) {
+		V[i] = memory[idx + i];
+	}
+}
+
 
 
 void emulate_cycle() {
@@ -264,10 +366,11 @@ void emulate_cycle() {
 
 	//execute
 	pc += 2;
-	//Mask off (with a binary AND) the first number in the instruction, and have one case per numbe
 
+	uint8_t unknown_instruction_hit = 0;
+
+	//Mask off (with a binary AND) the first number in the instruction, and have one case per numbe
 	uint16_t masked_opcode = (opcode & 0xF000) >> 12;
-	uint8_t last_nibble_opcode = opcode & 0xF; 
 
 	switch (masked_opcode) {
 	case 0x0:
@@ -280,7 +383,7 @@ void emulate_cycle() {
 			op_00EE();
 			break;
 		default:
-			break;
+			unknown_instruction_hit = 1;
 		}
 		break;
 	case 0x1:
@@ -334,6 +437,9 @@ void emulate_cycle() {
 			case 0xE:
 				op_8XYE();
 				break;
+			default:
+				unknown_instruction_hit = 1;
+				break;
 		}
 		break;
 	case 0x9:
@@ -350,7 +456,57 @@ void emulate_cycle() {
 		break;
 	case 0xD:
 		op_DXYN();
+		break;
+	case 0xE:
+		switch (n)
+		{
+		case 0xE:
+			op_EX9E();
+			break;
+		case 0X1:
+			op_EXA1();
+			break;
+		default:
+			unknown_instruction_hit = 1;
+			break;
+		}
+	case 0xF:
+		switch (nn)
+		{
+		case 0x07:
+			op_FX07();
+			break;
+		case 0x15:
+			op_FX15();
+			break;
+		case 0x18:
+			op_FX18();
+			break;
+		case 0x1E:
+			op_FX1E();
+			break;
+		case 0x0A:
+			op_FX0A();
+			break;
+		case 0x29:
+			op_FX29();
+			break;
+		case 0x33:
+			op_FX33();
+			break;
+		case 0x55:
+			op_FX55();
+			break;
+		case 0x65:
+			op_FX65();
+			break;
+		default:
+			//unknown_instruction_hit = 1;
+			break;
+		}
+
 	default:
+		//unknown_instruction_hit = 1;
 		break;
 	}
 
@@ -362,6 +518,15 @@ void emulate_cycle() {
 	//decrement sound timer
 	if (sound_timer) {
 		--sound_timer;
+	}
+
+	if (debug_flag == 1) {
+		print_debugging_information();
+		if (unknown_instruction_hit == 1) {
+			printf("Unknown instruction: %04x\n", opcode);
+			//getchar();
+		}
+
 	}
 }
 
@@ -382,7 +547,13 @@ uint8_t get_pixel_set_in_display(uint8_t xpos, uint8_t ypos) {
 }
 
 uint16_t get_pixel_array_index_in_display(uint8_t xpos, uint8_t ypos) {
-	return SCREEN_WIDTH * ypos + xpos;
+	uint16_t index = SCREEN_WIDTH * ypos + xpos;
+	if (index < SCREEN_HEIGHT * SCREEN_WIDTH) {
+		return index;
+	}
+	else {
+		return 0;
+	}
 }
 
 void init_chip8() {
@@ -391,4 +562,24 @@ void init_chip8() {
 	srand(time(NULL));
 }
 
+void print_debugging_information() {
+	printf("*******************************\n");
+	printf("8 bit Registers:\n");
+	for (uint8_t i = 0; i <= 0xF; i++) {
+		printf(" V%02x: %02x ", i, V[i]);
+		if ((i + 1) % 8 == 0) {
+			printf("\n");
+		}
+	}
+	printf("16 bit registers:\n");
+	printf(" idx: %04x pc: %04x sp: %04x op: %04x\n", idx, pc, sp, opcode);
+	for (uint8_t i = 0; i < KEYPAD_SIZE; i++) {
+		printf(" Key%02x: %02x ", i, keypad[i]);
+		if ((i + 1) % 8 == 0) {
+			printf("\n");
+		}
+	}
+	printf("\n*******************************\n");
+
+}
 

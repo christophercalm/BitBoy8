@@ -2,6 +2,7 @@
 #define NUM_REGISTERS 16
 #define STACK_LEVELS 16
 #define KEYPAD_SIZE 16
+#define KEY_BYTE_LENGTH 5
 #define SIZE_MEMORY 4096
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
@@ -10,20 +11,17 @@
 #define FONTSET_SIZE 80
 #define WIDTH_SPRITE 8
 
-
-//xpos = i % 64, ypos = y / 64
 extern uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT];
 extern uint8_t memory[SIZE_MEMORY];
 extern uint8_t keypad[KEYPAD_SIZE];
 extern uint8_t draw_flag;
 
-
-
-
 uint8_t get_random_byte();
 uint8_t get_bit_from_byte(uint8_t byte, uint8_t bit);
 uint8_t get_pixel_set_in_display(uint8_t xpos, uint8_t ypos);
 uint16_t get_pixel_array_index_in_display(uint8_t xpos, uint8_t ypos);
+void print_debugging_information();
+
 
 void op_1NNN();
 
@@ -68,6 +66,28 @@ void op_ANNN();
 void op_BNNN();
 
 void op_DXYN();
+
+void op_EX9E();
+
+void op_EXA1();
+
+void op_FX07();
+
+void op_FX15();
+
+void op_FX18();
+
+void op_FX1E();
+
+void op_FX0A();
+
+void op_FX29();
+
+void op_FX33();
+
+void op_FX55();
+
+void op_FX65();
 
 void emulate_cycle();
 
