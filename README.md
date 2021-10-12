@@ -41,3 +41,4 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 ## Acknowledgments
 * [Tobias V. Langhoff](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/)
 * [AUSTIN MORLAN](https://austinmorlan.com/posts/chip8_emulator/)
+* [EMUDEV Discord](https://discord.gg/jWw7YczuT4)
