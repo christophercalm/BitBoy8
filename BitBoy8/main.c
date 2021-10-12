@@ -9,11 +9,11 @@
 
 
 
-#define SDL_SCALE_FACTOR 15
+#define SDL_SCALE_FACTOR 20
 #define SDL_SCREEN_WIDTH (SCREEN_WIDTH * SDL_SCALE_FACTOR)
 #define SDL_SCREEN_HEIGHT (SCREEN_HEIGHT * SDL_SCALE_FACTOR)
 #define DEBUG 1
-#define DELAY_TIME 5
+#define DELAY_TIME 4
 
 
 int main(int argc, char* argv);
@@ -31,8 +31,8 @@ int main(int argc, char* argv) {
     SDL_Surface* screen_surface = NULL;
 
     //timing variables to slow down execution
-    uint16_t current_time = 0;
-    uint16_t last_time = 0;
+    uint32_t current_time = 0;
+    uint32_t last_time = 0;
 
     SDL_Event key_event;
 
@@ -40,7 +40,7 @@ int main(int argc, char* argv) {
 
     init_chip8();
 
-    FILE* f = fopen("tetris.rom", "rb");
+    FILE* f = fopen("breakout.rom", "rb");
 
     //FILE *f = fopen(argv[1], "rb");
     if (f == NULL) {
@@ -112,7 +112,6 @@ int main(int argc, char* argv) {
         }
         current_time = SDL_GetTicks();
         if (current_time > last_time + DELAY_TIME) {
-            printf("next tick");
             emulate_cycle();
             update_graphics(&window, &screen_surface);
             last_time = current_time;
@@ -163,7 +162,6 @@ void update_graphics(SDL_Window **window, SDL_Surface **screen_surface) {
         SDL_UpdateWindowSurface(*window);
     }
     draw_flag = 0;
-    //SDL_Delay(1000);
 }
 
 

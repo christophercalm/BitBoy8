@@ -159,14 +159,6 @@ void op_8XY6() {
 	V[0xF] = (V[x] & 0x1u);
 
 	V[x] >>= 1;
-	/*if (get_bit_from_byte(V[x], 1)) {
-		V[0xF] = 1;
-	}
-	else {
-		V[0xF] = 0;
-	}
-
-	V[x] >>= 1;*/
 }
 
 //SUBN Vx, Vy
@@ -362,6 +354,9 @@ void emulate_cycle() {
 	nn = memory[pc + 1];
 	nnn = opcode & 0x0FFF;
 
+	printf("%04x", opcode);
+
+
 	//printf("%04x", opcode);
 
 	//execute
@@ -371,6 +366,8 @@ void emulate_cycle() {
 
 	//Mask off (with a binary AND) the first number in the instruction, and have one case per numbe
 	uint16_t masked_opcode = (opcode & 0xF000) >> 12;
+
+	
 
 	switch (masked_opcode) {
 	case 0x0:
@@ -384,6 +381,7 @@ void emulate_cycle() {
 			break;
 		default:
 			unknown_instruction_hit = 1;
+			break;
 		}
 		break;
 	case 0x1:
@@ -470,6 +468,7 @@ void emulate_cycle() {
 			unknown_instruction_hit = 1;
 			break;
 		}
+		break;
 	case 0xF:
 		switch (nn)
 		{
@@ -504,7 +503,7 @@ void emulate_cycle() {
 			//unknown_instruction_hit = 1;
 			break;
 		}
-
+		break;
 	default:
 		//unknown_instruction_hit = 1;
 		break;
@@ -524,7 +523,6 @@ void emulate_cycle() {
 		print_debugging_information();
 		if (unknown_instruction_hit == 1) {
 			printf("Unknown instruction: %04x\n", opcode);
-			//getchar();
 		}
 
 	}
@@ -548,11 +546,12 @@ uint8_t get_pixel_set_in_display(uint8_t xpos, uint8_t ypos) {
 
 uint16_t get_pixel_array_index_in_display(uint8_t xpos, uint8_t ypos) {
 	uint16_t index = SCREEN_WIDTH * ypos + xpos;
-	if (index < SCREEN_HEIGHT * SCREEN_WIDTH) {
+	if (index >= (SCREEN_HEIGHT * SCREEN_WIDTH)) {
+		index = index % SCREEN_WIDTH;
 		return index;
 	}
 	else {
-		return 0;
+		return index;
 	}
 }
 
@@ -573,6 +572,9 @@ void print_debugging_information() {
 	}
 	printf("16 bit registers:\n");
 	printf(" idx: %04x pc: %04x sp: %04x op: %04x\n", idx, pc, sp, opcode);
+	printf("Opcode Helpers: \n");
+	printf("X: %02x Y: %02x N: %02x NN: %02x: NNN: %04x\n", x, y, n, nn, nnn);
+	printf("Keypad:\n");
 	for (uint8_t i = 0; i < KEYPAD_SIZE; i++) {
 		printf(" Key%02x: %02x ", i, keypad[i]);
 		if ((i + 1) % 8 == 0) {
