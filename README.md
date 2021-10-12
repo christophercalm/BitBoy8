@@ -9,8 +9,9 @@ A chip8 emulator I wrote as a first large project in C and an introduction to 8 
 
 ### Dependencies
 
-SDL2
-C compiler
+-(SDL2)[https://www.libsdl.org/]
+
+-C compiler
 
 ### Installing
 
@@ -35,7 +36,7 @@ Christopher Calmes
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.txt file for details
+This project is licensed under the MIT License - see the LICENSE.md file for details
 
 ## Acknowledgments
 * [Tobias V. Langhoff](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/)
