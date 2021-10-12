@@ -20,6 +20,7 @@ uint8_t get_random_byte();
 uint8_t get_bit_from_byte(uint8_t byte, uint8_t bit);
 uint8_t get_pixel_set_in_display(uint8_t xpos, uint8_t ypos);
 uint16_t get_pixel_array_index_in_display(uint8_t xpos, uint8_t ypos);
+void emulate_cycle(uint8_t debug_on);
 void print_debugging_information();
 
 

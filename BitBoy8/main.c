@@ -12,18 +12,18 @@
 #define SDL_SCALE_FACTOR 20
 #define SDL_SCREEN_WIDTH (SCREEN_WIDTH * SDL_SCALE_FACTOR)
 #define SDL_SCREEN_HEIGHT (SCREEN_HEIGHT * SDL_SCALE_FACTOR)
-#define DEBUG 1
 #define DELAY_TIME 4
 
 
-int main(int argc, char* argv);
+int main(int argc, char* argv[]);
 void load_rom(unsigned char* buffer, int32_t fsize);
 void load_font();
 void update_graphics(SDL_Window **window, SDL_Surface **screen_surface);
 void init_graphics(SDL_Window  **window, SDL_Surface  **screen_surface);
 
-int main(int argc, char* argv) {
+int main(int argc, char* argv[]) {
     uint8_t quit = 0;
+    uint8_t debug_on = 0;
     //The window we'll be rendering to
     SDL_Window* window = NULL;
 
@@ -40,11 +40,13 @@ int main(int argc, char* argv) {
 
     init_chip8();
 
-    FILE* f = fopen("breakout.rom", "rb");
+    if (argv[2]) {
+        debug_on = 1;
+    }
 
-    //FILE *f = fopen(argv[1], "rb");
+    FILE *f = fopen(argv[1], "rb");
     if (f == NULL) {
-        printf("error: Couldn't open %c\n", argv[1]);
+        printf("error: Couldn't open %s\n", argv[1]);
         exit(1);
     }
 
@@ -112,7 +114,7 @@ int main(int argc, char* argv) {
         }
         current_time = SDL_GetTicks();
         if (current_time > last_time + DELAY_TIME) {
-            emulate_cycle();
+            emulate_cycle(debug_on);
             update_graphics(&window, &screen_surface);
             last_time = current_time;
         }

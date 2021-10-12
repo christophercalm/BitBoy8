@@ -20,8 +20,6 @@ uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT] = { 0 };
 uint8_t draw_flag = 0;
 uint16_t opcode = 0;
 
-uint8_t debug_flag = 1;
-
 uint8_t x;
 uint8_t y;
 uint8_t n;
@@ -173,14 +171,6 @@ void op_8XY7() {
 	}
 
 	V[x] = V[y] - V[x];
-	/*if (V[x] > V[y]) {
-		V[0xF] = 1;
-	}
-	else {
-		V[0xF] = 0;
-	}
-
-	V[x] = V[y] - V[x];*/
 }
 
 //SHL Vx {, Vy}
@@ -234,12 +224,10 @@ void op_DXYN() {
 		for (uint8_t sprite_pixel = 0; sprite_pixel < WIDTH_SPRITE; sprite_pixel++) {
 			if (get_bit_from_byte(display_byte, WIDTH_SPRITE - sprite_pixel - 1) && get_pixel_set_in_display(x_pos, y_pos)) {
 				uint16_t index = get_pixel_array_index_in_display(x_pos, y_pos);
-				printf("%d", index);
 				video[index] = 0;
 				V[0xF] = 1;
 			}	else if (get_bit_from_byte(display_byte, WIDTH_SPRITE - sprite_pixel - 1) && !get_pixel_set_in_display(x_pos, y_pos)) {
 				uint16_t index = get_pixel_array_index_in_display(x_pos, y_pos);
-				printf("%d", index);
 				video[index] = 1;
 			}
 			x_pos++;
@@ -337,7 +325,7 @@ void op_FX65() {
 
 
 
-void emulate_cycle() {
+void emulate_cycle(uint8_t debug_on) {
 
 	// Fetch:
 	opcode = (memory[pc] << 8) | memory[pc + 1];
@@ -354,11 +342,6 @@ void emulate_cycle() {
 	nn = memory[pc + 1];
 	nnn = opcode & 0x0FFF;
 
-	printf("%04x", opcode);
-
-
-	//printf("%04x", opcode);
-
 	//execute
 	pc += 2;
 
@@ -366,8 +349,6 @@ void emulate_cycle() {
 
 	//Mask off (with a binary AND) the first number in the instruction, and have one case per numbe
 	uint16_t masked_opcode = (opcode & 0xF000) >> 12;
-
-	
 
 	switch (masked_opcode) {
 	case 0x0:
@@ -500,12 +481,10 @@ void emulate_cycle() {
 			op_FX65();
 			break;
 		default:
-			//unknown_instruction_hit = 1;
 			break;
 		}
 		break;
 	default:
-		//unknown_instruction_hit = 1;
 		break;
 	}
 
@@ -519,12 +498,8 @@ void emulate_cycle() {
 		--sound_timer;
 	}
 
-	if (debug_flag == 1) {
+	if (debug_on == 1) {
 		print_debugging_information();
-		if (unknown_instruction_hit == 1) {
-			printf("Unknown instruction: %04x\n", opcode);
-		}
-
 	}
 }
 
