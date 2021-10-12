@@ -1,6 +1,6 @@
 # BitBoy8
 
-![Alt text](screenshot.jpg?raw=true "Title")
+![Alt text](screenshot.JPG?raw=true "Title")
 
 
 A chip8 emulator I wrote as a first large project in C and an introduction to 8 bit computers. It has not been tested on every rom but should work with most chip8 binaries. 
