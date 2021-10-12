@@ -27,7 +27,7 @@ bitboy8.exe romfile.rom debug
 
 ## Authors
 
-ex. Christopher Calmes 
+Christopher Calmes 
 
 ## Version History
 * 0.1
@@ -38,7 +38,5 @@ ex. Christopher Calmes
 This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
 
 ## Acknowledgments
-
-Inspiration, code snippets, etc.
 * [Tobias V. Langhoff](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/)
 * [AUSTIN MORLAN](https://austinmorlan.com/posts/chip8_emulator/)
